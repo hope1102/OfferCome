@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OfferCome 简历资料</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>OC</span><div><h1>OfferCome</h1><p>你的本地网申资料库</p></div></div>
+    <div class="top-actions">
+      <button id="tracker-button" class="ghost" type="button">求职工作台</button>
+      <button id="import-button" class="ghost" type="button">导入 JSON</button>
+      <button id="export-button" class="ghost" type="button">导出备份</button>
+      <button id="save-button" class="primary" type="button">保存全部资料</button>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <nav>
+        <a href="#basics">基本信息</a>
+        <a href="#education">教育经历</a>
+        <a href="#experience">工作/实习</a>
+        <a href="#projects">项目经历</a>
+        <a href="#campus">校园经历</a>
+        <a href="#skills">技能与语言</a>
+        <a href="#achievements">证书与奖项</a>
+        <a href="#publications">论文 / 专利</a>
+        <a href="#family">家庭成员</a>
+        <a href="#answers">常见问答</a>
+        <a href="#settings">填写设置</a>
+      </nav>
+      <div class="privacy"><strong>仅保存在本机</strong><br>OfferCome 当前没有服务器，也不会上传这些资料。</div>
+    </aside>
+
+    <main>
+      <div id="notice" class="notice" hidden></div>
+      <section id="basics" class="panel">
+        <div class="section-title"><div><h2>基本信息</h2><p>填写越完整，跨网站匹配效果越好。</p></div></div>
+        <div id="basics-fields" class="form-grid"></div>
+      </section>
+
+      <div id="repeat-sections"></div>
+
+      <section id="answers" class="panel">
+        <div class="section-title"><div><h2>常见问答</h2><p>只使用你明确提供的答案，不会杜撰经历。</p></div></div>
+        <div id="answer-fields" class="form-grid"></div>
+      </section>
+
+      <section id="settings" class="panel">
+        <div class="section-title"><div><h2>填写设置</h2><p>敏感资料默认不会自动填写。</p></div></div>
+        <div class="settings-grid">
+          <label class="check"><input id="setting-overwrite" type="checkbox"> 默认覆盖页面已有内容</label>
+          <label class="check"><input id="setting-highlight" type="checkbox"> 填写后高亮结果</label>
+          <label class="check warning"><input id="setting-sensitive" type="checkbox"> 允许填写证件类型和证件号</label>
+          <label>最低匹配置信度
+            <select id="setting-confidence">
+              <option value="0.82">仅高置信度（更谨慎）</option>
+              <option value="0.62">中高置信度（推荐）</option>
+              <option value="0.5">包含低置信度（风险较高）</option>
+            </select>
+          </label>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="empty-template"><div class="empty">暂无内容，点击右上角“新增”开始填写。</div></template>
+  <script src="../shared/defaults.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

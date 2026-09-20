@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OfferCome 工作台回归</title>
+  <link rel="stylesheet" href="../../src/tracker/tracker.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>OC</span><div><h1>OfferCome 求职工作台</h1><p>申请进度仅保存在本机浏览器</p></div></div>
+    <div class="top-actions"><button id="resume" class="ghost">简历资料</button><button id="export" class="ghost">导出记录</button><button id="add" class="primary">＋ 添加申请</button></div>
+  </header>
+  <main>
+    <section class="heading"><div><h2>我的申请</h2><p>一键填写后自动进入“已填写”，确认投递后再调整状态。</p></div><div id="stats" class="stats"></div></section>
+    <nav class="tabs"><button class="tab active" data-view="active">进行中 <span id="active-count">0</span></button><button class="tab" data-view="ended">已结束 <span id="ended-count">0</span></button><button class="tab" data-view="archived">已归档 <span id="archived-count">0</span></button></nav>
+    <section class="filters"><label class="search"><span>⌕</span><input id="search" type="search" placeholder="搜索职位、公司或地点"></label><select id="stage-filter"><option value="">全部状态</option></select></section>
+    <section id="board" class="board"></section>
+    <section id="empty" class="empty" hidden><div>暂无申请记录</div><p>在网申页面点击 OfferCome 的“一键填写”，这里会自动生成记录。</p><button id="empty-add" class="primary">手动添加申请</button></section>
+  </main>
+  <div id="backdrop" class="backdrop" hidden></div>
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <header class="drawer-head"><div><span class="eyebrow">申请详情</span><h2 id="drawer-title">新申请</h2></div><button id="close" class="icon-button">×</button></header>
+    <div class="drawer-body">
+      <section class="detail-section"><div class="section-row"><h3>职位信息</h3><span id="auto-tag" class="tag">手动记录</span></div><div id="record-meta" class="record-meta"></div><div class="form-grid">
+        <label class="wide">职位名称<input id="position"></label><label>公司<input id="company"></label><label>工作地点<input id="location"></label><label>职位类型<input id="job-type"></label><label>当前状态<select id="stage"></select></label><label class="wide">原职位链接<input id="source-url"></label><label class="wide">职位摘要<textarea id="summary"></textarea></label>
+      </div></section>
+      <section class="detail-section"><h3>下一步</h3><label>待办或截止日期<input id="next-action" type="date"></label></section>
+      <section class="detail-section"><h3>个人备注</h3><textarea id="notes"></textarea></section>
+      <section class="detail-section"><h3>投递复盘</h3><div class="form-grid"><label>复盘结论<select id="review-outcome"><option value="">暂未复盘</option><option>流程顺利</option><option>材料待改进</option><option>岗位不匹配</option><option>继续重点跟进</option><option>不再跟进</option></select></label><label class="wide">复盘总结<textarea id="review-summary"></textarea></label></div></section>
+      <section class="detail-section"><h3>申请进展</h3><div id="timeline" class="timeline"></div></section>
+    </div>
+    <footer class="drawer-actions"><button id="open-source" class="ghost">打开原职位</button><button id="archive" class="ghost">归档</button><button id="delete" class="danger">删除</button><button id="save" class="primary grow">保存申请</button></footer>
+  </aside>
+  <script src="chrome-storage-mock.js"></script>
+  <script src="../../src/shared/defaults.js"></script>
+  <script src="../../src/shared/utils.js"></script>
+  <script src="../../src/shared/applications.js"></script>
+  <script src="../../src/shared/storage.js"></script>
+  <script src="../../src/tracker/tracker.js"></script>
+</body>
+</html>

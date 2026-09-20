@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OfferCome 侧栏</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div class="logo">OC</div>
+      <div>
+        <h1>OfferCome</h1>
+        <p id="site">正在连接当前页面…</p>
+      </div>
+    </header>
+
+    <section id="status" class="status info">点击扫描，查看可填写字段。</section>
+
+    <details id="manual" class="manual" open>
+      <summary>定点填写</summary>
+      <p id="manual-target" class="manual-target">先点击网页中要填写的框，再点下方资料。</p>
+      <div class="manual-toolbar">
+        <div id="manual-nav" class="manual-nav">
+          <button id="manual-nav-toggle" class="manual-nav-toggle" type="button" aria-haspopup="listbox" aria-expanded="false">
+            <span id="manual-nav-label">导航 · 全部资料</span><span class="manual-nav-arrow">⌄</span>
+          </button>
+          <div id="manual-nav-menu" class="manual-nav-menu" role="listbox" hidden></div>
+        </div>
+        <input id="manual-search" class="manual-search" type="search" placeholder="搜索资料" autocomplete="off">
+      </div>
+      <div id="manual-list" class="manual-list"></div>
+      <p id="manual-empty" class="manual-empty" hidden>简历资料中暂无可用内容。</p>
+    </details>
+
+    <section id="metrics" class="metrics" hidden>
+      <div><strong id="matched">0</strong><span>已匹配</span></div>
+      <div><strong id="high">0</strong><span>高置信</span></div>
+      <div><strong id="required">0</strong><span>必填待处理</span></div>
+    </section>
+
+    <section id="preview" class="preview" hidden>
+      <h2>匹配预览</h2>
+      <div id="preview-list"></div>
+    </section>
+
+    <label class="toggle">
+      <input id="overwrite" type="checkbox">
+      <span>覆盖页面已有内容</span>
+    </label>
+
+    <div class="actions">
+      <button id="scan" class="secondary" type="button">扫描页面</button>
+      <button id="fill" class="primary" type="button">一键填写</button>
+    </div>
+    <div class="footer-links">
+      <button id="tracker" class="link" type="button">打开求职工作台</button>
+      <button id="options" class="link" type="button">编辑简历资料与导入导出</button>
+    </div>
+  </main>
+  <script src="../shared/defaults.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/fields.js"></script>
+  <script src="../shared/manual-fields.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

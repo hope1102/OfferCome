@@ -1,0 +1,15 @@
+.offercome-filled {
+  outline: 2px solid #22a06b !important;
+  outline-offset: 2px !important;
+  transition: outline-color 180ms ease;
+}
+
+.offercome-failed {
+  outline: 2px solid #d64545 !important;
+  outline-offset: 2px !important;
+}
+
+.offercome-unmatched {
+  outline: 2px solid #d99a17 !important;
+  outline-offset: 2px !important;
+}

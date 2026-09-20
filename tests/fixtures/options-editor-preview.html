@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>OfferCome 资料编辑器回归</title>
+  <link rel="stylesheet" href="../../src/options/options.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>OC</span><div><h1>OfferCome</h1><p>资料编辑器脱敏回归</p></div></div>
+    <div class="top-actions"><button id="tracker-button">求职工作台</button><button id="import-button">导入</button><button id="export-button">导出</button><button id="save-button">保存</button><input id="import-file" type="file" hidden></div>
+  </header>
+  <div class="layout">
+    <aside><nav><a href="#publications">论文 / 专利</a></nav></aside>
+    <main>
+      <div id="notice" hidden></div>
+      <section class="panel"><div id="basics-fields"></div></section>
+      <div id="repeat-sections"></div>
+      <section class="panel"><div id="answer-fields"></div></section>
+      <section class="panel"><div class="settings-grid">
+        <label class="check"><input id="setting-overwrite" type="checkbox">覆盖</label>
+        <label class="check"><input id="setting-highlight" type="checkbox">高亮</label>
+        <label class="check"><input id="setting-sensitive" type="checkbox">敏感字段</label>
+        <select id="setting-confidence"><option value="0.82">0.82</option><option value="0.62">0.62</option><option value="0.5">0.5</option></select>
+      </div></section>
+    </main>
+  </div>
+  <template id="empty-template"><div class="empty">暂无内容</div></template>
+  <script src="options-storage-mock.js"></script>
+  <script src="../../src/shared/defaults.js"></script>
+  <script src="../../src/shared/utils.js"></script>
+  <script src="../../src/shared/storage.js"></script>
+  <script src="../../src/options/options.js"></script>
+</body>
+</html>

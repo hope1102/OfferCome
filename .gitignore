@@ -1,0 +1,6 @@
+.playwright-cli/
+output/playwright/
+*.crx
+*.pem
+offercome-backup-*.json
+private-data/

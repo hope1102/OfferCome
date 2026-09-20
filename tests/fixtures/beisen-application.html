@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Beisen iTalent recruitment form">
+  <title>OfferCome 北森网申回归页</title>
+  <style>
+    body { max-width: 980px; margin: 24px auto; font: 15px system-ui; color: #1d2b24; }
+    #result { margin: 16px 0; padding: 12px; background: #eef7f1; white-space: pre-wrap; }
+    .resume-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 28px; }
+    .north-row { display: contents; }
+    .resume-form-item { min-width: 0; }
+    .fieldName { margin-bottom: 7px; color: #52625a; }
+    .fieldControl { display: flex; min-height: 38px; }
+    input, .selectControl { box-sizing: border-box; width: 100%; padding: 9px 12px; border: 1px solid #c7d1cc; border-radius: 4px; background: #fff; }
+    .selectControl { cursor: pointer; }
+    .phoneRow .selectControl { width: 130px; border-radius: 4px 0 0 4px; }
+    .phoneRow input { border-left: 0; border-radius: 0 4px 4px 0; }
+    .optionList { position: absolute; z-index: 2; margin-top: 42px; min-width: 210px; padding: 4px; border: 1px solid #c7d1cc; background: white; box-shadow: 0 6px 20px #0002; }
+    .optionItem { padding: 7px 10px; cursor: pointer; }
+    .optionItem:hover { background: #e8f3ec; }
+  </style>
+</head>
+<body>
+  <h1>北森 iTalent 脱敏表单</h1>
+  <button id="run" type="button">运行北森回归验证</button>
+  <div id="result">尚未运行</div>
+
+  <section class="resume-section" data-title="个人信息">
+    <div class="north-row">
+    <div class="north-cell">
+      <div class="north-caption">* 姓名</div>
+      <div class="fieldControl"><input id="candidate-name"></div>
+    </div>
+    <div class="north-cell">
+      <div class="north-caption">* 证件号码</div>
+      <div class="fieldControl"><input id="id-number"></div>
+    </div>
+    </div>
+
+    <div class="resume-form-item" data-field="id-type">
+      <div class="fieldName">* 证件号类型</div>
+      <div class="fieldControl" id="id-type-host"></div>
+    </div>
+    <div class="resume-form-item" data-field="gender">
+      <div class="fieldName">* 性别</div>
+      <div class="fieldControl" id="gender-host"></div>
+    </div>
+
+    <div class="resume-form-item" data-field="email">
+      <div class="fieldName">* 邮箱</div>
+      <div class="fieldControl"><input id="email" type="email"></div>
+    </div>
+    <div class="resume-form-item" data-field="phone">
+      <div class="fieldName">* 手机号码</div>
+      <div class="fieldControl phoneRow">
+        <div id="country-code" class="selectControl" role="combobox" aria-haspopup="listbox" aria-controls="country-code-options" aria-expanded="false">中国大陆</div>
+        <input id="phone" type="tel" placeholder="请输入11位手机号">
+      </div>
+      <div id="country-code-options" class="optionList" role="listbox" hidden>
+        <div class="optionItem" role="option">中国大陆</div>
+        <div class="optionItem" role="option">中国香港</div>
+      </div>
+    </div>
+
+    <div class="resume-form-item" data-field="native-place">
+      <div class="fieldName">* 籍贯</div>
+      <div class="fieldControl" id="native-place-host"></div>
+    </div>
+    <div class="resume-form-item" data-field="source-place">
+      <div class="fieldName">* 生源地</div>
+      <div class="fieldControl" id="source-place-host"></div>
+    </div>
+
+    <div class="resume-form-item" data-field="ethnicity">
+      <div class="fieldName">* 民族</div>
+      <div class="fieldControl">
+        <div id="ethnicity-trigger" class="north-select"><input id="ethnicity" placeholder="请选择"><span>⌄</span></div>
+        <div id="ethnicity-options" class="popupLayer" hidden>
+          <div class="choiceNode">汉族</div><div class="choiceNode">回族</div>
+        </div>
+      </div>
+    </div>
+    <div class="resume-form-item" data-field="birth-date">
+      <div class="fieldName">* 出生日期</div>
+      <div class="fieldControl"><div role="combobox" aria-haspopup="listbox"><input id="birth-date" readonly></div></div>
+    </div>
+
+    <div class="resume-form-item" data-field="study-mode">
+      <div class="fieldName">* 学习形式</div>
+      <div class="fieldControl" id="study-mode-host"></div>
+    </div>
+    <div class="resume-form-item" data-field="graduation-date">
+      <div class="fieldName">* 毕业时间</div>
+      <div class="fieldControl"><div role="combobox" aria-haspopup="listbox"><input id="graduation-date" readonly></div></div>
+    </div>
+
+    <div class="resume-form-item" data-field="political-status">
+      <div class="fieldName">* 政治面貌</div>
+      <div class="fieldControl" id="political-status-host"></div>
+    </div>
+  </section>
+
+  <script>
+    function mountCombobox(hostId, id, options) {
+      const host = document.getElementById(hostId);
+      host.innerHTML = `<div id="${id}" class="selectControl" role="combobox" tabindex="0" aria-haspopup="listbox" aria-controls="${id}-options" aria-expanded="false">请选择</div>
+        <div id="${id}-options" class="optionList" role="listbox" hidden>${options.map((option) => `<div class="optionItem" role="option">${option}</div>`).join("")}</div>`;
+    }
+    mountCombobox("id-type-host", "id-type", ["身份证", "护照"]);
+    mountCombobox("gender-host", "gender", ["男", "女"]);
+    mountCombobox("native-place-host", "native-place", ["山东-潍坊", "陕西-西安"]);
+    mountCombobox("source-place-host", "source-place", ["山东-临沂", "陕西-西安"]);
+    mountCombobox("study-mode-host", "study-mode", ["全日制统分统招", "非全日制"]);
+    mountCombobox("political-status-host", "political-status", ["中共党员", "共青团员", "群众"]);
+    document.querySelectorAll("#native-place-options [role='option'], #source-place-options [role='option']").forEach((option) => {
+      option.removeAttribute("role");
+      option.dataset.value = option.textContent.trim();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (event.target.closest("#ethnicity-trigger")) {
+        document.getElementById("ethnicity-options").hidden = false;
+        return;
+      }
+      const looseChoice = event.target.closest("#ethnicity-options .choiceNode");
+      if (looseChoice) {
+        document.getElementById("ethnicity").value = looseChoice.textContent.trim();
+        document.getElementById("ethnicity-options").hidden = true;
+        return;
+      }
+      const combobox = event.target.closest("[role='combobox']");
+      if (combobox) {
+        const listbox = document.getElementById(combobox.getAttribute("aria-controls"));
+        if (listbox) {
+          listbox.hidden = false;
+          combobox.setAttribute("aria-expanded", "true");
+        }
+        return;
+      }
+      const option = event.target.closest("[role='option'], [data-value]");
+      if (!option) return;
+      const listbox = option.closest("[role='listbox']");
+      const owner = document.querySelector(`[aria-controls="${listbox.id}"]`);
+      owner.textContent = option.textContent.trim();
+      owner.setAttribute("aria-valuetext", option.textContent.trim());
+      owner.setAttribute("aria-expanded", "false");
+      option.setAttribute("aria-selected", "true");
+      listbox.hidden = true;
+      owner.dispatchEvent(new Event("input", { bubbles: true }));
+      owner.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  </script>
+  <script src="../../src/shared/defaults.js"></script>
+  <script src="../../src/shared/utils.js"></script>
+  <script src="../../src/shared/fields.js"></script>
+  <script src="../../src/content/site-adapters.js"></script>
+  <script src="../../src/content/form-analyzer.js"></script>
+  <script src="../../src/content/matcher.js"></script>
+  <script src="../../src/content/filler.js"></script>
+  <script>
+    document.getElementById("run").addEventListener("click", async () => {
+      const OC = globalThis.OfferCome;
+      const profile = OC.createDefaultProfile();
+      Object.assign(profile.basics, {
+        fullName: "测试用户", idType: "身份证", idNumber: "000000000000000000",
+        gender: "男", email: "test@example.com", phone: "13800000000",
+        nativePlace: "山东-潍坊", sourcePlace: "山东-临沂", ethnicity: "汉族",
+        birthDate: "2000-12-01", politicalStatus: "中共党员"
+      });
+      profile.education = [{
+        enrollmentType: "全日制统分统招", endDate: "2027-06-01"
+      }];
+      const settings = { ...OC.createDefaultSettings(), minimumConfidence: 0.62, fillSensitiveFields: true };
+      const analysis = OC.formAnalyzer.analyze();
+      const pairs = OC.matcher.matchAll(analysis.controls, profile, settings);
+      const countryPair = pairs.find((pair) => pair.control.element.id === "country-code");
+      const phonePair = pairs.find((pair) => pair.control.element.id === "phone");
+      const results = await OC.filler.fillAll(pairs, settings);
+      const values = {
+        adapter: analysis.adapter.id,
+        name: document.getElementById("candidate-name").value,
+        idType: document.getElementById("id-type").textContent.trim(),
+        idNumber: document.getElementById("id-number").value,
+        gender: document.getElementById("gender").textContent.trim(),
+        email: document.getElementById("email").value,
+        country: document.getElementById("country-code").textContent.trim(),
+        phone: document.getElementById("phone").value,
+        nativePlace: document.getElementById("native-place").textContent.trim(),
+        sourcePlace: document.getElementById("source-place").textContent.trim(),
+        ethnicity: document.getElementById("ethnicity").value,
+        birthDate: document.getElementById("birth-date").value,
+        studyMode: document.getElementById("study-mode").textContent.trim(),
+        graduationDate: document.getElementById("graduation-date").value,
+        politicalStatus: document.getElementById("political-status").textContent.trim(),
+        countryMatch: countryPair?.match?.definition?.path || null,
+        phoneMatch: phonePair?.match?.definition?.path || null
+      };
+      const passed = values.adapter === "beisen" && values.name === "测试用户" &&
+        values.idType === "身份证" && values.idNumber === "000000000000000000" &&
+        values.gender === "男" && values.email === "test@example.com" &&
+        values.country === "中国大陆" && values.phone === "13800000000" &&
+        values.nativePlace === "山东-潍坊" && values.sourcePlace === "山东-临沂" &&
+        values.ethnicity === "汉族" && values.birthDate === "2000-12-01" &&
+        values.studyMode === "全日制统分统招" && values.graduationDate === "2027-06-01" &&
+        values.politicalStatus === "中共党员" && values.countryMatch === null &&
+        values.phoneMatch === "basics.phone";
+      document.getElementById("result").textContent = `${passed ? "PASS" : "FAIL"}\n${JSON.stringify({
+        controls: analysis.controls.length,
+        matched: pairs.filter((pair) => pair.match).length,
+        resultStates: results.map((result) => result.status),
+        values
+      }, null, 2)}`;
+      document.body.dataset.testResult = passed ? "pass" : "fail";
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OfferCome 求职工作台</title>
+  <link rel="stylesheet" href="tracker.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span>OC</span>
+      <div><h1>OfferCome 求职工作台</h1><p>申请进度仅保存在本机浏览器</p></div>
+    </div>
+    <div class="top-actions">
+      <button id="resume" class="ghost" type="button">简历资料</button>
+      <button id="export" class="ghost" type="button">导出记录</button>
+      <button id="add" class="primary" type="button">＋ 添加申请</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="heading">
+      <div><h2>我的申请</h2><p>一键填写后自动进入“已填写”，确认投递后再调整状态。</p></div>
+      <div id="stats" class="stats"></div>
+    </section>
+
+    <nav class="tabs" aria-label="申请分类">
+      <button class="tab active" data-view="active" type="button">进行中 <span id="active-count">0</span></button>
+      <button class="tab" data-view="ended" type="button">已结束 <span id="ended-count">0</span></button>
+      <button class="tab" data-view="archived" type="button">已归档 <span id="archived-count">0</span></button>
+    </nav>
+
+    <section class="filters">
+      <label class="search"><span>⌕</span><input id="search" type="search" placeholder="搜索职位、公司或地点"></label>
+      <select id="stage-filter" aria-label="按状态筛选"><option value="">全部状态</option></select>
+    </section>
+
+    <section id="board" class="board" aria-live="polite"></section>
+    <section id="empty" class="empty" hidden>
+      <div>暂无申请记录</div>
+      <p>在网申页面点击 OfferCome 的“一键填写”，这里会自动生成记录。</p>
+      <button id="empty-add" class="primary" type="button">手动添加申请</button>
+    </section>
+  </main>
+
+  <div id="backdrop" class="backdrop" hidden></div>
+  <aside id="drawer" class="drawer" aria-label="申请详情" aria-hidden="true">
+    <header class="drawer-head">
+      <div><span class="eyebrow">申请详情</span><h2 id="drawer-title">新申请</h2></div>
+      <button id="close" class="icon-button" type="button" aria-label="关闭">×</button>
+    </header>
+    <div class="drawer-body">
+      <section class="detail-section">
+        <div class="section-row"><h3>职位信息</h3><span id="auto-tag" class="tag">手动记录</span></div>
+        <div id="record-meta" class="record-meta"></div>
+        <div class="form-grid">
+          <label class="wide">职位名称<input id="position" maxlength="100" placeholder="例如：定位算法工程师"></label>
+          <label>公司<input id="company" maxlength="100" placeholder="公司名称"></label>
+          <label>工作地点<input id="location" maxlength="80" placeholder="城市或地点"></label>
+          <label>职位类型<input id="job-type" maxlength="40" placeholder="全职 / 实习"></label>
+          <label>当前状态<select id="stage"></select></label>
+          <label class="wide">原职位链接<input id="source-url" type="url" placeholder="https://..."></label>
+          <label class="wide">职位摘要<textarea id="summary" rows="4" maxlength="1200" placeholder="记录岗位方向、要求或其他信息"></textarea></label>
+        </div>
+      </section>
+
+      <section class="detail-section">
+        <h3>下一步</h3>
+        <label>待办或截止日期<input id="next-action" type="date"></label>
+      </section>
+
+      <section class="detail-section">
+        <h3>个人备注</h3>
+        <textarea id="notes" rows="5" maxlength="2000" placeholder="记录联系人、准备重点或需要跟进的事项"></textarea>
+      </section>
+
+      <section class="detail-section">
+        <h3>投递复盘</h3>
+        <div class="form-grid">
+          <label>复盘结论<select id="review-outcome"><option value="">暂未复盘</option><option>流程顺利</option><option>材料待改进</option><option>岗位不匹配</option><option>继续重点跟进</option><option>不再跟进</option></select></label>
+          <label class="wide">复盘总结<textarea id="review-summary" rows="5" maxlength="3000" placeholder="记录本次投递中表单问题、简历缺口、笔面试反馈和下次改进事项"></textarea></label>
+        </div>
+      </section>
+
+      <section class="detail-section">
+        <h3>申请进展</h3>
+        <div id="timeline" class="timeline"></div>
+      </section>
+    </div>
+    <footer class="drawer-actions">
+      <button id="open-source" class="ghost" type="button">打开原职位</button>
+      <button id="archive" class="ghost" type="button">归档</button>
+      <button id="delete" class="danger" type="button">删除</button>
+      <button id="save" class="primary grow" type="button">保存申请</button>
+    </footer>
+  </aside>
+
+  <script src="../shared/defaults.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/applications.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="tracker.js"></script>
+</body>
+</html>

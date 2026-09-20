@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>定位算法工程师 - 示例导航科技</title>
+  <meta name="description" content="负责 GNSS/INS 组合导航算法开发。">
+  <style>
+    body { max-width: 760px; margin: 30px auto; font: 15px system-ui; }
+    label { display: block; margin: 12px 0; }
+    input { padding: 8px; width: 360px; }
+    #result { white-space: pre-wrap; padding: 12px; background: #eef5f0; }
+  </style>
+</head>
+<body>
+  <h1 class="job-title">定位算法工程师</h1>
+  <p class="company-name">示例导航科技</p>
+  <p class="job-location">西安市</p>
+  <button id="run" type="button">运行完整链路回归</button>
+  <div id="result">尚未运行</div>
+  <form>
+    <label>姓名<input id="name"></label>
+    <label>电子邮箱<input id="email" type="email"></label>
+    <label>手机号码<input id="phone" type="tel"></label>
+  </form>
+
+  <script src="content-script-mock.js"></script>
+  <script src="../../src/shared/defaults.js"></script>
+  <script src="../../src/shared/utils.js"></script>
+  <script src="../../src/shared/fields.js"></script>
+  <script src="../../src/shared/manual-fields.js"></script>
+  <script src="../../src/shared/applications.js"></script>
+  <script src="../../src/shared/storage.js"></script>
+  <script src="../../src/content/site-adapters.js"></script>
+  <script src="../../src/content/form-analyzer.js"></script>
+  <script src="../../src/content/matcher.js"></script>
+  <script src="../../src/content/filler.js"></script>
+  <script src="../../src/content/content-script.js"></script>
+  <script>
+    document.getElementById("run").addEventListener("click", async () => {
+      const noTarget = await sendOfferComeMessage({ type: "OFFERCOME_MANUAL_FILL", path: "basics.email", sectionIndex: 0, overwriteExisting: true });
+      document.getElementById("name").focus();
+      const manualState = await sendOfferComeMessage({ type: "OFFERCOME_MANUAL_STATE" });
+      const manual = await sendOfferComeMessage({ type: "OFFERCOME_MANUAL_FILL", path: "basics.email", sectionIndex: 0, overwriteExisting: true });
+      const manuallyFilledValue = document.getElementById("name").value;
+      const first = await sendOfferComeMessage({ type: "OFFERCOME_FILL" });
+      const second = await sendOfferComeMessage({ type: "OFFERCOME_FILL", overwriteExisting: true });
+      const applications = getMockApplications();
+      const record = applications[0];
+      const values = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value
+      };
+      const passed = !noTarget.ok && manualState.ok && manualState.target && manual.ok && manual.status === "filled" && manuallyFilledValue === "test@example.com" &&
+        first.ok && second.ok && first.counts.filled === 2 && first.counts.skipped === 1 && second.counts.filled === 3 &&
+        applications.length === 1 && record.stage === "prepared" && record.position === "定位算法工程师" &&
+        record.company === "示例导航科技" && record.location === "西安市" && record.resumeName === "测试用户" &&
+        record.applicationMethod === "OfferCome 一键填写" && record.fillStats.filled === 3 &&
+        values.name === "测试用户" && values.email === "test@example.com" && values.phone === "13800000000";
+      document.body.dataset.testResult = passed ? "pass" : "fail";
+      document.getElementById("result").textContent = `${passed ? "PASS" : "FAIL"}\n${JSON.stringify({ noTarget, manualState, manual, first, second, applications, values }, null, 2)}`;
+    });
+  </script>
+</body>
+</html>

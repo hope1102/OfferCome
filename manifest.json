@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "OfferCome - 网申简历一键填写",
+  "description": "本地保存简历资料，识别招聘网站表单并由用户一键填写。",
+  "version": "0.4.0",
+  "permissions": ["storage", "activeTab", "scripting", "sidePanel"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "action": {
+    "default_title": "打开 OfferCome 侧栏"
+  },
+  "side_panel": {
+    "default_path": "src/popup/popup.html"
+  },
+  "options_page": "src/options/options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "src/shared/defaults.js",
+        "src/shared/utils.js",
+        "src/shared/fields.js",
+        "src/shared/manual-fields.js",
+        "src/shared/applications.js",
+        "src/shared/storage.js",
+        "src/content/site-adapters.js",
+        "src/content/form-analyzer.js",
+        "src/content/matcher.js",
+        "src/content/filler.js",
+        "src/content/content-script.js"
+      ],
+      "css": ["src/content/content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [],
+  "minimum_chrome_version": "114"
+}
