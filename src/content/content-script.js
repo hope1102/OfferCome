@@ -1,6 +1,42 @@
 (function initContentScript(global) {
   const OfferCome = global.OfferCome;
   let lastManualTarget = null;
+  let manualCaret = null;
+
+  function rememberManualCaret() {
+    const element = lastManualTarget;
+    if (!element?.isConnected) return;
+    if (typeof element.selectionStart === "number") {
+      manualCaret = { offset: element.selectionDirection === "backward" ? element.selectionStart : element.selectionEnd };
+    } else if (element.isContentEditable) {
+      const selection = document.getSelection();
+      if (selection?.focusNode && element.contains(selection.focusNode)) {
+        const range = document.createRange();
+        range.setStart(selection.focusNode, selection.focusOffset);
+        range.collapse(true);
+        manualCaret = { range };
+      }
+    }
+  }
+  const reviewControlIds = new WeakMap();
+  let nextReviewControlId = 0;
+
+  function reviewId(control) {
+    if (!reviewControlIds.has(control.element)) {
+      reviewControlIds.set(control.element, `offercome-review-${++nextReviewControlId}`);
+    }
+    return reviewControlIds.get(control.element);
+  }
+
+  function reviewSignature(pair) {
+    return JSON.stringify([
+      pair.match.definition.path,
+      pair.control.section || "",
+      pair.control.sectionIndex || 0,
+      pair.control.type,
+      pair.control.normalizedText
+    ]);
+  }
 
   const MANUAL_TARGET_SELECTOR = [
     "input:not([type='hidden']):not([type='submit']):not([type='button']):not([type='password']):not([disabled]):not([readonly])",
@@ -28,7 +64,9 @@
     const path = typeof event.composedPath === "function" ? event.composedPath() : [event.target];
     const target = path.find((node) => node instanceof Element && node.matches?.(MANUAL_TARGET_SELECTOR));
     if (target) {
+      if (lastManualTarget !== target) manualCaret = null;
       lastManualTarget = target;
+      rememberManualCaret();
       clearTimeout(targetNotificationTimer);
       targetNotificationTimer = setTimeout(notifyManualTargetChanged, 40);
     }
@@ -36,8 +74,12 @@
 
   document.addEventListener("focusin", rememberManualTarget, true);
   document.addEventListener("pointerdown", rememberManualTarget, true);
+  ["selectionchange", "pointerup", "keyup", "input", "focusout"].forEach((name) => {
+    document.addEventListener(name, rememberManualCaret, true);
+  });
   if (document.activeElement instanceof Element && document.activeElement.matches(MANUAL_TARGET_SELECTOR)) {
     lastManualTarget = document.activeElement;
+    rememberManualCaret();
   }
 
   function resolveManualControl(analysis) {
@@ -62,6 +104,7 @@
     const profile = OfferCome.utils.mergeDefaults(OfferCome.createDefaultProfile(), stored[keys[0]]);
     const settings = OfferCome.utils.mergeDefaults(OfferCome.createDefaultSettings(), stored[keys[1]]);
     const analysis = OfferCome.formAnalyzer.analyze();
+    analysis.controls.forEach((control) => { control.reviewId = reviewId(control); });
     const pairs = OfferCome.matcher.matchAll(analysis.controls, profile, settings);
     return { profile, settings, analysis, pairs };
   }
@@ -76,6 +119,19 @@
     const matched = context.pairs.filter((pair) => pair.match);
     const levels = { high: 0, medium: 0, low: 0 };
     matched.forEach((pair) => { levels[confidenceLevel(pair.match.confidence)] += 1; });
+    const fields = matched.map((pair) => ({
+      id: pair.control.reviewId,
+      signature: reviewSignature(pair),
+      field: pair.match.definition.label,
+      target: pair.control.rawText.slice(0, 160),
+      confidence: pair.match.confidence,
+      value: String(pair.match.value ?? ""),
+      sensitive: Boolean(pair.match.definition.sensitive),
+      type: pair.control.type,
+      required: Boolean(pair.control.required),
+      hasExistingValue: !OfferCome.utils.isBlank(pair.control.existingValue),
+      existingValue: String(pair.control.existingValue ?? "")
+    }));
     return {
       site: location.hostname,
       title: document.title,
@@ -84,11 +140,12 @@
       matched: matched.length,
       requiredUnmatched: context.pairs.filter((pair) => pair.control.required && !pair.match).length,
       levels,
-      preview: matched.slice(0, 12).map((pair) => ({
-        field: pair.match.definition.label,
-        target: pair.control.rawText.slice(0, 80),
-        confidence: pair.match.confidence,
-        hasExistingValue: Boolean(pair.control.existingValue)
+      fields,
+      preview: fields.slice(0, 12).map((field) => ({
+        field: field.field,
+        target: field.target,
+        confidence: field.confidence,
+        hasExistingValue: field.hasExistingValue
       }))
     };
   }
@@ -222,7 +279,8 @@
           return;
         }
         if (typeof message.overwriteExisting === "boolean") context.settings.overwriteExisting = message.overwriteExisting;
-        const result = await OfferCome.filler.fillOne(control, { definition, value }, context.settings);
+        const result = await OfferCome.filler.fillManual(control, { definition, value }, context.settings, manualCaret);
+        if (result.caret) manualCaret = result.caret;
         const refreshed = OfferCome.formAnalyzer.analyze();
         sendResponse({
           ok: true,
@@ -239,19 +297,47 @@
       }
       if (message.type === "OFFERCOME_FILL") {
         if (typeof message.overwriteExisting === "boolean") context.settings.overwriteExisting = message.overwriteExisting;
-        const results = await OfferCome.filler.fillAll(context.pairs, context.settings);
-        const counts = { filled: 0, skipped: 0, failed: 0 };
+        const requestedItems = Array.isArray(message.items) ? message.items : null;
+        let pairs = context.pairs;
+        const selectionFailures = [];
+        if (requestedItems) {
+          const pairsById = new Map(context.pairs.filter((pair) => pair.match).map((pair) => [pair.control.reviewId, pair]));
+          pairs = [];
+          requestedItems.forEach((item) => {
+            const pair = pairsById.get(String(item?.id || ""));
+            if (!pair || String(item?.signature || "") !== reviewSignature(pair)) {
+              selectionFailures.push({ field: item?.field || "已选择字段", target: "", reason: "页面字段已经变化，请重新扫描" });
+              return;
+            }
+            const value = String(item?.value ?? "");
+            if (!value.trim()) {
+              selectionFailures.push({ field: pair.match.definition.label, target: pair.control.rawText.slice(0, 120), reason: "本次填写值为空" });
+              return;
+            }
+            if (value.length > 50000) {
+              selectionFailures.push({ field: pair.match.definition.label, target: pair.control.rawText.slice(0, 120), reason: "本次填写值过长" });
+              return;
+            }
+            pairs.push({ ...pair, match: { ...pair.match, value } });
+          });
+        }
+        const results = await OfferCome.filler.fillAll(pairs, context.settings);
+        const counts = { filled: 0, skipped: 0, failed: selectionFailures.length };
         results.forEach((result) => { counts[result.status] += 1; });
-        const failures = results.filter((result) => result.status === "failed").map((result) => ({
-          field: result.pair.match.definition.label,
-          target: result.pair.control.rawText.slice(0, 120),
-          reason: result.reason
-        }));
-        const currentSummary = summary(context);
+        const failures = [
+          ...selectionFailures,
+          ...results.filter((result) => result.status === "failed").map((result) => ({
+            field: result.pair.match.definition.label,
+            target: result.pair.control.rawText.slice(0, 120),
+            reason: result.reason
+          }))
+        ];
+        const refreshedContext = await getContext();
+        const currentSummary = summary(refreshedContext);
         let application = null;
         let recordingError = "";
         try {
-          application = await recordApplication(counts, currentSummary, context.profile.basics.fullName);
+          application = await recordApplication(counts, currentSummary, refreshedContext.profile.basics.fullName);
         } catch (error) {
           recordingError = error.message || "申请记录保存失败";
         }

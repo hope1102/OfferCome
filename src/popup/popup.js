@@ -8,6 +8,7 @@
     required: document.getElementById("required"),
     preview: document.getElementById("preview"),
     previewList: document.getElementById("preview-list"),
+    toggleSelection: document.getElementById("toggle-selection"),
     manualTarget: document.getElementById("manual-target"),
     manualNav: document.getElementById("manual-nav"),
     manualNavToggle: document.getElementById("manual-nav-toggle"),
@@ -38,6 +39,7 @@
   ];
   let manualEntries = [];
   let manualCategory = "all";
+  let busy = false;
 
   function setStatus(text, type = "info") {
     elements.status.textContent = text;
@@ -45,8 +47,13 @@
   }
 
   function setBusy(value) {
+    busy = value;
     elements.scan.disabled = value;
-    elements.fill.disabled = value;
+    elements.overwrite.disabled = value;
+    elements.toggleSelection.disabled = value;
+    elements.previewList.classList.toggle("busy", value);
+    elements.previewList.setAttribute("aria-busy", String(value));
+    updateFillButton();
   }
 
   function tabSite(tab) {
@@ -61,19 +68,76 @@
     return String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
   }
 
+  function reviewRows() {
+    return Array.from(elements.previewList.querySelectorAll(".review-row")).map((row) => ({
+      row,
+      check: row.querySelector(".review-check-input"),
+      input: row.querySelector(".review-value")
+    }));
+  }
+
+  function updateFillButton() {
+    const rows = reviewRows().filter(({ check, input }) => check.checked && !check.disabled && input.value.trim());
+    elements.fill.textContent = `填写所选 ${rows.length} 项`;
+    elements.fill.disabled = busy || rows.length === 0;
+    const selectable = reviewRows().filter(({ check, input }) => !check.disabled && input.value.trim());
+    const allSelected = selectable.length > 0 && selectable.every(({ check }) => check.checked);
+    elements.toggleSelection.textContent = allSelected ? "取消全选" : "全选可填写";
+    elements.toggleSelection.disabled = busy || selectable.length === 0;
+  }
+
+  function syncOverwriteState() {
+    reviewRows().forEach(({ row, check }) => {
+      const hasExistingValue = row.dataset.hasExisting === "true";
+      check.disabled = hasExistingValue && !elements.overwrite.checked;
+      if (check.disabled) check.checked = false;
+    });
+    updateFillButton();
+  }
+
+  function reviewValueControl(item) {
+    const value = String(item.value ?? "");
+    if (value.includes("\n") || value.length > 80 || item.type === "textarea" || item.type === "contenteditable") {
+      return `<textarea class="review-value" maxlength="50000" aria-label="${escapeHtml(item.field)}本次填写值">${escapeHtml(value)}</textarea>`;
+    }
+    return `<input class="review-value" type="text" maxlength="50000" value="${escapeHtml(value)}" aria-label="${escapeHtml(item.field)}本次填写值">`;
+  }
+
   function renderSummary(summary) {
+    const fields = Array.isArray(summary.fields) ? summary.fields : [];
     elements.site.textContent = `${summary.adapter} · ${summary.site}`;
     elements.metrics.hidden = false;
     elements.matched.textContent = summary.matched;
     elements.high.textContent = summary.levels.high;
     elements.required.textContent = summary.requiredUnmatched;
-    elements.preview.hidden = summary.preview.length === 0;
-    elements.previewList.innerHTML = summary.preview.map((item) => `
-      <div class="preview-row">
-        <span>${escapeHtml(item.field)}</span>
-        <span class="target" title="${escapeHtml(item.target)}">${escapeHtml(item.target)}</span>
-        <span class="confidence">${Math.round(item.confidence * 100)}%</span>
-      </div>`).join("");
+    elements.preview.hidden = fields.length === 0;
+    elements.previewList.innerHTML = fields.map((item) => {
+      const confidence = Math.round(item.confidence * 100);
+      const confidenceLevel = item.confidence >= 0.82 ? "high" : item.confidence >= 0.62 ? "medium" : "low";
+      const existing = item.hasExistingValue
+        ? `<p class="review-existing" title="${escapeHtml(item.existingValue)}">网页已有：${escapeHtml(String(item.existingValue).replace(/\s+/g, " ").slice(0, 120))}</p>`
+        : "";
+      return `
+        <article class="review-row${item.hasExistingValue ? " has-existing" : ""}"
+          data-review-id="${escapeHtml(item.id)}" data-field-label="${escapeHtml(item.field)}"
+          data-review-signature="${escapeHtml(item.signature)}"
+          data-has-existing="${item.hasExistingValue}">
+          <div class="review-top">
+            <label class="review-check">
+              <input class="review-check-input" type="checkbox" ${item.hasExistingValue ? "" : "checked"}>
+              <span>${escapeHtml(item.field)}${item.required ? " *" : ""}</span>
+            </label>
+            <span class="confidence ${confidenceLevel}">${confidence}%</span>
+          </div>
+          <p class="review-target" title="${escapeHtml(item.target)}">网页字段：${escapeHtml(item.target || item.field)}</p>
+          <label class="review-value-label">
+            <span>本次填写值${item.sensitive ? " · 敏感资料" : ""}</span>
+            ${reviewValueControl(item)}
+          </label>
+          ${existing}
+        </article>`;
+    }).join("");
+    syncOverwriteState();
   }
 
   function previewValue(entry) {
@@ -230,6 +294,10 @@
       const response = await send("OFFERCOME_SCAN");
       if (!response?.ok) throw new Error(response?.error || "扫描失败");
       renderSummary(response.summary);
+      if (response.summary.matched && !Array.isArray(response.summary.fields)) {
+        setStatus("当前页面仍在使用旧版脚本，请刷新招聘网页后重新扫描。", "error");
+        return;
+      }
       setStatus(`找到 ${response.summary.totalControls} 个控件，匹配 ${response.summary.matched} 个字段。`, response.summary.matched ? "success" : "info");
     } catch (error) {
       setStatus("无法连接当前页面。扩展已尝试重新加载脚本；若仍失败，请刷新普通网页后重试。", "error");
@@ -239,10 +307,22 @@
   }
 
   async function fill() {
+    const items = reviewRows()
+      .filter(({ check, input }) => check.checked && !check.disabled && input.value.trim())
+      .map(({ row, input }) => ({
+        id: row.dataset.reviewId,
+        signature: row.dataset.reviewSignature,
+        field: row.dataset.fieldLabel,
+        value: input.value
+      }));
+    if (!items.length) {
+      setStatus("请先勾选至少一个有填写值的字段。", "info");
+      return;
+    }
     setBusy(true);
-    setStatus("正在填写，请不要切换页面…");
+    setStatus(`正在填写所选 ${items.length} 项，请不要切换页面…`);
     try {
-      const response = await send("OFFERCOME_FILL", { overwriteExisting: elements.overwrite.checked });
+      const response = await send("OFFERCOME_FILL", { items, overwriteExisting: elements.overwrite.checked });
       if (!response?.ok) throw new Error(response?.error || "填写失败");
       renderSummary(response.summary);
       const { filled, skipped, failed } = response.counts;
@@ -265,6 +345,15 @@
 
   elements.scan.addEventListener("click", scan);
   elements.fill.addEventListener("click", fill);
+  elements.previewList.addEventListener("input", updateFillButton);
+  elements.previewList.addEventListener("change", updateFillButton);
+  elements.overwrite.addEventListener("change", syncOverwriteState);
+  elements.toggleSelection.addEventListener("click", () => {
+    const selectable = reviewRows().filter(({ check, input }) => !check.disabled && input.value.trim());
+    const shouldSelect = selectable.some(({ check }) => !check.checked);
+    selectable.forEach(({ check }) => { check.checked = shouldSelect; });
+    updateFillButton();
+  });
   elements.manualNavToggle.addEventListener("click", () => {
     setManualNavigationOpen(elements.manualNavMenu.hidden);
   });
@@ -315,12 +404,14 @@
     if (changes[globalThis.OfferCome.STORAGE_KEYS.profile]) void loadManualEntries();
     if (changes[globalThis.OfferCome.STORAGE_KEYS.settings]) {
       elements.overwrite.checked = Boolean(changes[globalThis.OfferCome.STORAGE_KEYS.settings].newValue?.overwriteExisting);
+      syncOverwriteState();
     }
   });
 
   (async () => {
     const stored = await chrome.storage.local.get("offercome.settings");
     elements.overwrite.checked = Boolean(stored["offercome.settings"]?.overwriteExisting);
+    syncOverwriteState();
     await loadManualEntries();
     await activateTab();
   })();

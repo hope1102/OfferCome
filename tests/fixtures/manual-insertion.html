@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>定点插入回归</title>
+<body>
+  <label>姓名<input id="text"></label>
+  <label>描述<textarea id="area"></textarea></label>
+  <label>邮箱<input id="email" type="email"></label>
+  <div id="rich" contenteditable="true" aria-label="自我介绍"></div>
+  <button id="away">模拟切换到侧栏</button>
+  <pre id="result">运行中</pre>
+  <script src="content-script-mock.js"></script>
+  <script src="../../src/shared/defaults.js"></script>
+  <script src="../../src/shared/utils.js"></script>
+  <script src="../../src/shared/fields.js"></script>
+  <script src="../../src/shared/manual-fields.js"></script>
+  <script src="../../src/shared/applications.js"></script>
+  <script src="../../src/shared/storage.js"></script>
+  <script src="../../src/content/site-adapters.js"></script>
+  <script src="../../src/content/form-analyzer.js"></script>
+  <script src="../../src/content/matcher.js"></script>
+  <script src="../../src/content/filler.js"></script>
+  <script src="../../src/content/content-script.js"></script>
+  <script>
+    (async () => {
+      const results = [];
+      const assert = (condition, message) => { if (!condition) throw new Error(message); results.push(message); };
+      const tick = () => new Promise((resolve) => setTimeout(resolve, 20));
+      const insert = async (overwriteExisting = false) => {
+        document.getElementById("away").focus();
+        const response = await sendOfferComeMessage({ type: "OFFERCOME_MANUAL_FILL", path: "basics.fullName", overwriteExisting });
+        assert(response.ok && response.status === "filled", "插入成功");
+      };
+      try {
+        const text = document.getElementById("text");
+        for (const position of [0, 2, 4]) {
+          text.value = "前文后文";
+          text.focus();
+          text.setSelectionRange(position, position);
+          await tick();
+          await insert();
+          assert(text.value === "前文后文".slice(0, position) + "测试用户" + "前文后文".slice(position), `保留位置 ${position} 前后内容`);
+          assert(text.selectionStart === position + 4, "光标移至新内容之后");
+        }
+        await insert(true);
+        assert(text.value === "前文后文测试用户测试用户", "勾选覆盖仍连续插入");
+        text.value = "保留选中文字";
+        text.focus();
+        text.setSelectionRange(2, 4, "backward");
+        await tick();
+        await insert();
+        assert(text.value === "保留测试用户选中文字", "反向选区不删除原文");
+        const area = document.getElementById("area");
+        area.value = "第一行\n第二行";
+        area.focus();
+        area.setSelectionRange(4, 4);
+        await tick();
+        await insert();
+        assert(area.value === "第一行\n测试用户第二行", "多行输入保留换行及后文");
+        const email = document.getElementById("email");
+        email.value = "prefix";
+        email.focus();
+        await tick();
+        await insert();
+        assert(email.value === "prefix测试用户", "无法获取光标时末尾追加");
+        const rich = document.getElementById("rich");
+        rich.innerHTML = "<b>前文</b><i>后文</i>";
+        rich.focus();
+        document.getSelection().setPosition(rich.firstChild.firstChild, 1);
+        await tick();
+        document.getElementById("away").focus();
+        document.getSelection().removeAllRanges();
+        await insert();
+        assert(rich.textContent === "前测试用户文后文" && rich.querySelector("i").textContent === "后文", "失焦后富文本保留光标及格式");
+        await insert();
+        assert(rich.textContent === "前测试用户测试用户文后文", "富文本连续插入");
+        text.value = "旧内容";
+        text.focus();
+        text.setSelectionRange(0, 0);
+        await tick();
+        const reject = () => { text.value = "旧内容"; };
+        text.addEventListener("input", reject);
+        const rejected = await sendOfferComeMessage({ type: "OFFERCOME_MANUAL_FILL", path: "basics.fullName" });
+        text.removeEventListener("input", reject);
+        assert(rejected.status === "failed", "页面回滚插入时报告失败");
+        const control = { element: text, type: "text", existingValue: text.value };
+        const match = { definition: { kind: "text" }, value: "新内容" };
+        const skipped = await OfferCome.filler.fillOne(control, match, { overwriteExisting: false });
+        assert(skipped.status === "skipped" && text.value === "旧内容", "一键填写默认仍跳过已有内容");
+        const replaced = await OfferCome.filler.fillOne(control, match, { overwriteExisting: true });
+        assert(replaced.status === "filled" && text.value === "新内容", "一键填写勾选覆盖仍替换内容");
+        document.body.dataset.testResult = "pass";
+      } catch (error) {
+        results.push(error.stack);
+        document.body.dataset.testResult = "fail";
+      }
+      document.getElementById("result").textContent = document.body.dataset.testResult + "\n" + results.join("\n");
+    })();
+  </script>
+</body>
+</html>

@@ -4,3 +4,4 @@ output/playwright/
 *.pem
 offercome-backup-*.json
 private-data/
+reference/

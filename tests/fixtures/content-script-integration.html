@@ -42,6 +42,12 @@
       const manualState = await sendOfferComeMessage({ type: "OFFERCOME_MANUAL_STATE" });
       const manual = await sendOfferComeMessage({ type: "OFFERCOME_MANUAL_FILL", path: "basics.email", sectionIndex: 0, overwriteExisting: true });
       const manuallyFilledValue = document.getElementById("name").value;
+      const review = await sendOfferComeMessage({ type: "OFFERCOME_SCAN" });
+      const emailReview = review.summary.fields.find((field) => field.field === "邮箱");
+      const selected = await sendOfferComeMessage({
+        type: "OFFERCOME_FILL", items: [{ id: emailReview.id, signature: emailReview.signature, field: emailReview.field, value: "temporary@example.com" }]
+      });
+      const selectedValue = document.getElementById("email").value;
       const first = await sendOfferComeMessage({ type: "OFFERCOME_FILL" });
       const second = await sendOfferComeMessage({ type: "OFFERCOME_FILL", overwriteExisting: true });
       const applications = getMockApplications();
@@ -52,13 +58,14 @@
         phone: document.getElementById("phone").value
       };
       const passed = !noTarget.ok && manualState.ok && manualState.target && manual.ok && manual.status === "filled" && manuallyFilledValue === "test@example.com" &&
-        first.ok && second.ok && first.counts.filled === 2 && first.counts.skipped === 1 && second.counts.filled === 3 &&
+        review.ok && review.summary.fields.length === 3 && selected.ok && selected.counts.filled === 1 &&
+        selectedValue === "temporary@example.com" && first.ok && second.ok && first.counts.filled === 1 && first.counts.skipped === 2 && second.counts.filled === 3 &&
         applications.length === 1 && record.stage === "prepared" && record.position === "定位算法工程师" &&
         record.company === "示例导航科技" && record.location === "西安市" && record.resumeName === "测试用户" &&
         record.applicationMethod === "OfferCome 一键填写" && record.fillStats.filled === 3 &&
         values.name === "测试用户" && values.email === "test@example.com" && values.phone === "13800000000";
       document.body.dataset.testResult = passed ? "pass" : "fail";
-      document.getElementById("result").textContent = `${passed ? "PASS" : "FAIL"}\n${JSON.stringify({ noTarget, manualState, manual, first, second, applications, values }, null, 2)}`;
+      document.getElementById("result").textContent = `${passed ? "PASS" : "FAIL"}\n${JSON.stringify({ noTarget, manualState, manual, review, selected, selectedValue, first, second, applications, values }, null, 2)}`;
     });
   </script>
 </body>

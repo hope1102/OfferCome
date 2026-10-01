@@ -264,6 +264,59 @@
     return { status: success ? "filled" : "failed", reason: success ? "" : "控件拒绝该值或没有匹配选项" };
   }
 
+  async function fillManual(control, match, settings, caret) {
+    const { element, type } = control;
+    if (!["text", "search", "tel", "url", "email", "textarea", "contenteditable"].includes(type)) {
+      return fillOne(control, match, settings);
+    }
+    if (element.disabled || element.readOnly || (type === "contenteditable" && !element.isContentEditable)) {
+      return { status: "skipped", reason: "目标不可编辑" };
+    }
+    let success = false;
+    let nextCaret;
+    try {
+      const text = String(match.value);
+      if (type === "contenteditable") {
+        const range = caret?.range?.cloneRange();
+        const insertion = range && element.contains(range.startContainer) ? range : document.createRange();
+        if (insertion !== range) {
+          insertion.selectNodeContents(element);
+          insertion.collapse(false);
+        }
+        element.focus({ preventScroll: true });
+        const node = document.createTextNode(text);
+        insertion.insertNode(node);
+        insertion.setStartAfter(node);
+        insertion.collapse(true);
+        const selection = document.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(insertion);
+        nextCaret = { range: insertion.cloneRange() };
+        const expected = element.textContent;
+        emit(element, "input");
+        emit(element, "change");
+        await waitForUi();
+        success = element.textContent === expected;
+      } else {
+        const original = element.value;
+        const offset = Math.max(0, Math.min(original.length, caret?.offset ?? element.selectionEnd ?? original.length));
+        const expected = original.slice(0, offset) + text + original.slice(offset);
+        element.focus({ preventScroll: true });
+        setNativeValue(element, expected);
+        nextCaret = { offset: offset + text.length };
+        if (typeof element.selectionStart === "number") element.setSelectionRange(nextCaret.offset, nextCaret.offset);
+        emit(element, "input");
+        emit(element, "change");
+        await waitForUi();
+        success = element.value === expected;
+      }
+    } catch (_) {
+      success = false;
+    }
+    if (settings.highlightResults) highlight(element, success ? "filled" : "failed");
+    return { status: success ? "filled" : "failed", reason: success ? "" : "控件拒绝插入内容", caret: success ? nextCaret : undefined };
+  }
+
   async function fillAll(pairs, settings) {
     const results = [];
     for (const pair of pairs) {
@@ -277,5 +330,5 @@
     return results;
   }
 
-  OfferCome.filler = { fillAll, fillOne, choiceMatches, choiceScore, bestChoice, valueForInput, valuesEquivalent };
+  OfferCome.filler = { fillAll, fillOne, fillManual, choiceMatches, choiceScore, bestChoice, valueForInput, valuesEquivalent };
 })(globalThis);

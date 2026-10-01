@@ -20,6 +20,7 @@
 
     <details id="manual" class="manual" open>
       <summary>定点填写</summary>
+      <p class="manual-empty">文字资料在光标处插入，保留原有内容；无法定位光标时追加到末尾。</p>
       <p id="manual-target" class="manual-target">先点击网页中要填写的框，再点下方资料。</p>
       <div class="manual-toolbar">
         <div id="manual-nav" class="manual-nav">
@@ -41,7 +42,10 @@
     </section>
 
     <section id="preview" class="preview" hidden>
-      <h2>匹配预览</h2>
+      <div class="preview-heading">
+        <h2>逐字段核对</h2>
+        <button id="toggle-selection" class="preview-selection" type="button">取消全选</button>
+      </div>
       <div id="preview-list"></div>
     </section>
 
@@ -52,7 +56,7 @@
 
     <div class="actions">
       <button id="scan" class="secondary" type="button">扫描页面</button>
-      <button id="fill" class="primary" type="button">一键填写</button>
+      <button id="fill" class="primary" type="button">填写所选字段</button>
     </div>
     <div class="footer-links">
       <button id="tracker" class="link" type="button">打开求职工作台</button>
