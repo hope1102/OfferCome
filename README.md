@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icons/icon-512.png" width="160" height="160" alt="OfferCome icon">
+</p>
+
 # OfferCome
 
 OfferCome 是一款本地优先的 Edge / Chrome 网申简历自动填写扩展。它可以把结构化简历资料保存在浏览器本机，识别招聘网站中的表单字段，并通过“一键填写”或“定点填写”将资料写入网页。
